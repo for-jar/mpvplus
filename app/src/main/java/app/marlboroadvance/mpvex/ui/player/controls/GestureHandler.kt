@@ -1102,5 +1102,3 @@ fun MovingChevron(
             } 
     )
 }
-
-}
