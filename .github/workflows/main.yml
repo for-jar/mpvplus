@@ -1,13 +1,15 @@
-name: test1 Build
+name: Test1 Build
 
 on:
   push:
     branches: [ main, dev ]
   pull_request:
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -25,8 +27,9 @@ jobs:
       - name: Build Unsigned APK
         run: ./gradlew assembleStandardRelease
 
-      - name: Upload Unsigned APK
+      - name: Upload Unsigned APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: mpvplus-unsigned-apk
+          name: mpvplus-standard-release-unsigned
           path: app/build/outputs/apk/standard/release/*-unsigned.apk
+          if-no-files-found: warn
