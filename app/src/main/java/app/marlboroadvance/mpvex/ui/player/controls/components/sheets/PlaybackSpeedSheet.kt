@@ -85,12 +85,9 @@ fun PlaybackSpeedSheet(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
       
-      // Slider and +/- Buttons
-
-        
       // Calculate slider parameters
       val minSpeed = speedPresets.firstOrNull() ?: 0.25f
-      val maxSpeed = speedPresets.lastOrNull() ?: 4.0f
+      val maxSpeed = speedPresets.lastOrNull() ?: 8.0f
       
       // Helper to map speed to linear slider value (0..presets.size-1)
       fun speedToSliderProp(speed: Float): Float {
@@ -155,16 +152,15 @@ fun PlaybackSpeedSheet(
           Slider(
             value = speed,
             onValueChange = {
-                // Snap to nearest 0.05
                val snapped = (it * 20).roundToInt() / 20f
                onSpeedChange(snapped)
             },
-            valueRange = 0.1f..4.0f,
+            valueRange = 0.1f..8.0f,
             modifier = Modifier.weight(1f)
           )
           
         RepeatingIconButton(
-           onClick = { onSpeedChange((speed + 0.05f).coerceAtMost(4.0f)) },
+           onClick = { onSpeedChange((speed + 0.05f).coerceAtMost(8.0f)) },
            modifier = Modifier.size(40.dp)
         ) {
            Icon(Icons.Default.Add, null, modifier = Modifier.size(24.dp))
@@ -178,7 +174,7 @@ fun PlaybackSpeedSheet(
           horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
       ) {
           val defaultPresets = remember {
-            listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f)
+            listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 4.5f, 5.0f, 6.0f, 7.0f, 8.0f)
           }
 
           LazyRow(
@@ -309,4 +305,3 @@ fun Float.toFixed(precision: Int = 1): Float {
   val factor = 10.0f.pow(precision)
   return (this * factor).roundToInt() / factor
 }
-
