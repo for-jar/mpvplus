@@ -1,4 +1,4 @@
-name: Test1 Build
+name: test1 Build
 
 on:
   push:
@@ -24,12 +24,14 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build Unsigned APK
+      - name: Build Main arm64-v8a Unsigned APK
+        # This compiles ONLY the main standard release flavor
         run: ./gradlew assembleStandardRelease
 
-      - name: Upload Unsigned APK Artifact
+      - name: Upload Main arm64-v8a APK Only
         uses: actions/upload-artifact@v4
         with:
-          name: mpvplus-standard-release-unsigned
-          path: app/build/outputs/apk/standard/release/*-unsigned.apk
-          if-no-files-found: warn
+          name: mpvplus-main-arm64-v8a-release
+          # This strictly filters the upload path to only grasp the arm64 variant
+          path: app/build/outputs/apk/standard/release/*-arm64-v8a-release-unsigned.apk
+          if-no-files-found: error
