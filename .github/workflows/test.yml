@@ -1,4 +1,4 @@
-name: CI/CD Build
+name: TEST Build
 
 on:
   push:
