@@ -1,6 +1,4 @@
 package app.marlboroadvance.mpvex.ui.player.controls
-
-import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -41,8 +39,8 @@ import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsButton
 import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsGroup
 import app.marlboroadvance.mpvex.ui.theme.controlColor
 import app.marlboroadvance.mpvex.ui.theme.spacing
+import app.marlboroadvance.mpvex.utils.findActivity
 import dev.vivvvek.seeker.Segment
-
 @Composable
 fun TopPlayerControlsPortrait(
   mediaTitle: String?,
@@ -53,7 +51,6 @@ fun TopPlayerControlsPortrait(
 ) {
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
-
   Column {
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -65,16 +62,13 @@ fun TopPlayerControlsPortrait(
           onClick = onBackPress,
           color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         )
-
         val context = LocalContext.current
         ControlsButton(
           icon = Icons.Default.Close,
-          onClick = { (context as? Activity)?.finish() },
+          onClick = { context.findActivity()?.finish() },
           color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
         )
-
         val titleInteractionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
-
         androidx.compose.foundation.layout.Box(
           modifier =
             Modifier
@@ -154,7 +148,6 @@ fun TopPlayerControlsPortrait(
     }
   }
 }
-
 @Composable
 fun BottomPlayerControlsPortrait(
   buttons: List<PlayerButton>,
