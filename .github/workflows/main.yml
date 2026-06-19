@@ -2,7 +2,7 @@ name: test1 Build
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ master, dev ]
   pull_request:
   workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
 
