@@ -1,5 +1,4 @@
 package app.marlboroadvance.mpvex.ui.player.controls.components
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
@@ -47,12 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.marlboroadvance.mpvex.ui.theme.spacing
 import kotlinx.coroutines.delay
-
 /**
- * A compact speed control display that shows available speed options (0.25x to 4x)
+ * A compact speed control display that shows available speed options (0.25x to 8x)
  * with an indicator showing the current speed. Styled to match the zoom overlay.
  *
- * @param currentSpeed The current playback speed (0.25f to 4.0f)
+ * @param currentSpeed The current playback speed (0.25f to 8.0f)
  * @param modifier Optional modifier for the container
  */
 @Composable
@@ -60,14 +58,20 @@ fun SpeedControlSlider(
   currentSpeed: Float,
   modifier: Modifier = Modifier,
 ) {
-  // Speed presets from 0.25x to 4x
-  val speedPresets = listOf(0.25f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f)
-  
-  // Find the index of current speed in presets
-  val currentIndex = speedPresets.indexOfFirst { 
-    kotlin.math.abs(it - currentSpeed) < 0.05f 
-  }.coerceIn(0, speedPresets.size - 1)
-  
+  // Speed presets from 0.25x to 8x — MUST stay in sync with
+  // the gesture handler's speedPresets list in GestureHandler.kt
+  val speedPresets = listOf(
+    0.25f, 0.5f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f,
+    5.0f, 6.0f, 7.0f, 8.0f,
+  )
+
+  // Find the index of current speed in presets.
+  // If currentSpeed isn't in the preset list (e.g. 3.5x from an old
+  // install), default to index 0 instead of crashing.
+  val currentIndex = speedPresets.indexOfFirst {
+    kotlin.math.abs(it - currentSpeed) < 0.05f
+  }.let { if (it < 0) 0 else it }
+
   val primaryColor = MaterialTheme.colorScheme.primary
   val onSurfaceColor = MaterialTheme.colorScheme.onSurface
   // Use a Surface with less rounded corners instead of CircleShape
@@ -96,7 +100,7 @@ fun SpeedControlSlider(
       ) {
             // Speed labels - compact version
             Row(
-              modifier = Modifier.width(280.dp),
+              modifier = Modifier.width(320.dp),
               horizontalArrangement = Arrangement.SpaceBetween,
               verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -118,7 +122,7 @@ fun SpeedControlSlider(
             // Compact slider track
             Canvas(
               modifier = Modifier
-                .width(280.dp)
+                .width(320.dp)
                 .height(3.dp),
             ) {
               val trackWidth = size.width
@@ -182,7 +186,6 @@ fun SpeedControlSlider(
     }
   }
 }
-
 /**
  * A compact speed indicator that shows just the icon and speed value.
  * Used when dynamic speed overlay is collapsed or disabled.
@@ -225,7 +228,6 @@ fun CompactSpeedIndicator(
     )
   }
 }
-
 /**
  * Format float speed value to display with minimal decimal places
  */
