@@ -1,6 +1,4 @@
 package app.marlboroadvance.mpvex.ui.player.controls
-
-import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -41,8 +39,8 @@ import app.marlboroadvance.mpvex.ui.player.VideoAspect
 import app.marlboroadvance.mpvex.ui.player.controls.components.ControlsButton
 import app.marlboroadvance.mpvex.ui.theme.controlColor
 import app.marlboroadvance.mpvex.ui.theme.spacing
+import app.marlboroadvance.mpvex.utils.findActivity
 import dev.vivvvek.seeker.Segment
-
 @Composable
 fun TopLeftPlayerControlsLandscape(
   mediaTitle: String?,
@@ -53,7 +51,6 @@ fun TopLeftPlayerControlsLandscape(
 ) {
   val playlistModeEnabled = viewModel.hasPlaylistSupport()
   val clickEvent = LocalPlayerButtonsClickEvent.current
-
   Row(
     modifier = Modifier.width(IntrinsicSize.Max),
     verticalAlignment = Alignment.CenterVertically,
@@ -65,17 +62,14 @@ fun TopLeftPlayerControlsLandscape(
       color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
       modifier = Modifier.size(45.dp),
     )
-
     val context = LocalContext.current
     ControlsButton(
       icon = Icons.Default.Close,
-      onClick = { (context as? Activity)?.finish() },
+      onClick = { context.findActivity()?.finish() },
       color = if (hideBackground) controlColor else MaterialTheme.colorScheme.onSurface,
       modifier = Modifier.size(45.dp),
     )
-
     val titleInteractionSource = remember { MutableInteractionSource() }
-
     Box(
       modifier =
         Modifier
@@ -154,7 +148,6 @@ fun TopLeftPlayerControlsLandscape(
     }
   }
 }
-
 @Composable
 fun TopRightPlayerControlsLandscape(
   buttons: List<PlayerButton>,
@@ -200,7 +193,6 @@ fun TopRightPlayerControlsLandscape(
     }
   }
 }
-
 @Composable
 fun BottomRightPlayerControlsLandscape(
   buttons: List<PlayerButton>,
@@ -246,7 +238,6 @@ fun BottomRightPlayerControlsLandscape(
     }
   }
 }
-
 @Composable
 fun BottomLeftPlayerControlsLandscape(
   buttons: List<PlayerButton>,
