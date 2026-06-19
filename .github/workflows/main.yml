@@ -1,37 +1,142 @@
-name: test1 Build
+name: Build Standard Release APK
 
 on:
   push:
     branches: [ master, dev ]
   pull_request:
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      debug:
+        description: 'Print extra diagnostic info in the build log'
+        required: false
+        default: 'true'
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so getCommitCount() in build.gradle works
+
+      - name: Print commit being built (sanity check)
+        run: |
+          echo "================================================"
+          echo " Git commit being built:"
+          echo "   SHA:    $(git rev-parse HEAD)"
+          echo "   Short:  $(git rev-parse --short HEAD)"
+          echo "   Branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "   Message: $(git log -1 --pretty=%s)"
+          echo "   Date:   $(git log -1 --pretty=%cI)"
+          echo "================================================"
+          echo ""
+          echo " Verifying patched files are present in this commit:"
+          echo " --- PlayerPreferences.kt (holdForMultipleSpeed default) ---"
+          grep -n 'holdForMultipleSpeed' \
+            app/src/main/java/app/marlboroadvance/mpvex/preferences/PlayerPreferences.kt \
+            || echo "!! FILE NOT FOUND or no holdForMultipleSpeed line"
+          echo ""
+          echo " --- PlayerPreferences.kt (migration init block) ---"
+          grep -n 'pref_migration_v2_speed_8x_done' \
+            app/src/main/java/app/marlboroadvance/mpvex/preferences/PlayerPreferences.kt \
+            || echo "!! Migration block NOT present"
+          echo ""
+          echo " --- SpeedControlSlider.kt (8.0x presets) ---"
+          grep -n '8.0f' \
+            app/src/main/java/app/marlboroadvance/mpvex/ui/player/controls/components/SpeedControlSlider.kt \
+            || echo "!! 8.0f NOT found in SpeedControlSlider.kt"
+          echo ""
+          echo " --- ContextUtils.kt (findActivity helper) ---"
+          test -f app/src/main/java/app/marlboroadvance/mpvex/utils/ContextUtils.kt \
+            && echo "ContextUtils.kt EXISTS" \
+            || echo "!! ContextUtils.kt MISSING"
+          echo ""
+          echo " --- PlayerControlsLandscape.kt (uses findActivity?) ---"
+          grep -n 'findActivity' \
+            app/src/main/java/app/marlboroadvance/mpvex/ui/player/controls/PlayerControlsLandscape.kt \
+            || echo "!! findActivity NOT called in landscape file"
+          echo ""
+          echo " --- PlayerControlsPortrait.kt (uses findActivity?) ---"
+          grep -n 'findActivity' \
+            app/src/main/java/app/marlboroadvance/mpvex/ui/player/controls/PlayerControlsPortrait.kt \
+            || echo "!! findActivity NOT called in portrait file"
+          echo ""
+          echo "================================================"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: 17
           cache: 'gradle'
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Build Main arm64-v8a Unsigned APK
-        # This compiles ONLY the main standard release flavor
-        run: ./gradlew assembleStandardRelease
+      - name: Clean (purge stale build outputs)
+        run: ./gradlew clean --no-daemon
 
-      - name: Upload Main arm64-v8a APK Only
+      - name: Build Standard Release APK
+        # Bumps versionCode by embedding the GitHub run number, so every build
+        # is unique and Android will always let you install it over the previous
+        # one without "app not installed" errors.
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          ./gradlew assembleStandardRelease \
+            -Pandroid.injected.version.code=$((12900 + GITHUB_RUN_NUMBER)) \
+            -Pandroid.injected.version.name="1.2.9-ci${GITHUB_RUN_NUMBER}" \
+            --no-daemon
+
+      - name: Locate built APK
+        id: locate
+        run: |
+          echo "Built APKs in output directory:"
+          ls -la app/build/outputs/apk/standard/release/ || true
+          APK=$(ls app/build/outputs/apk/standard/release/*-arm64-v8a-release-unsigned.apk 2>/dev/null | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::error::arm64-v8a APK not found in output directory"
+            exit 1
+          fi
+          echo "Selected APK: $APK"
+          echo "apk_path=$APK" >> $GITHUB_OUTPUT
+
+      - name: Rename APK with commit SHA + run number
+        env:
+          APK_PATH: ${{ steps.locate.outputs.apk_path }}
+          SHA: ${{ github.sha }}
+          RUN_NUM: ${{ github.run_number }}
+        run: |
+          SHORT_SHA=${SHA::7}
+          NEW_NAME="mpvplus-standard-arm64-v8a-r${RUN_NUM}-${SHORT_SHA}-unsigned.apk"
+          mkdir -p artifacts
+          cp "$APK_PATH" "artifacts/$NEW_NAME"
+          echo "Renamed to: artifacts/$NEW_NAME"
+          ls -la artifacts/
+
+      - name: Upload renamed APK
         uses: actions/upload-artifact@v4
         with:
-          name: mpvplus-main-arm64-v8a-release
-          # This strictly filters the upload path to only grasp the arm64 variant
-          path: app/build/outputs/apk/standard/release/*-arm64-v8a-release-unsigned.apk
+          name: mpvplus-arm64-v8a-r${{ github.run_number }}-${{ github.sha }}
+          path: artifacts/*.apk
           if-no-files-found: error
+          retention-days: 30
+
+      - name: Build summary
+        run: |
+          echo "## Build Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Run # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| versionCode | $((12900 + ${{ github.run_number }})) |" >> $GITHUB_STEP_SUMMARY
+          echo "| versionName | 1.2.9-ci${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the APK from the Artifacts section below." >> $GITHUB_STEP_SUMMARY
+
